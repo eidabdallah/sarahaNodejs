@@ -1,21 +1,24 @@
-import { Op } from "sequelize";
 import userModel from "../../../DB/model/user.model.js";
 import { AppError } from "../../utils/errorHandling.js";
 import { AppResponse, globalSuccessHandler } from "../../utils/responseHandler.js";
 import { sendConfirmEmail } from './../auth/authHelpers.js';
+import { customAlphabet } from "nanoid";
+
 export const getAllUsers = async (req, res, next) => {
     const users = await userModel.findAll();
     if (users.length > 0) {
-        const response = new AppResponse('User registered successfully', users, 200, 'users');
+        const response = new AppResponse('جميع المستخدمين', users, 200, 'users');
         return globalSuccessHandler(response, req, res);
     }
     return next(new AppError('Users not found', 404));
 }
 
 export const getUserInfromation = async (req, res, next) => {
-    const user = await userModel.findByPk(req.user.id);
+    const user = await userModel.findByPk(req.user.id, {
+        attributes: { exclude: ['password', 'sendCode', 'confirmEmail'] }
+    });
     if (user) {
-        const response = new AppResponse('get User information successfully', { user }, 200);
+        const response = new AppResponse('معلومات المستخدم', user, 200, 'user');
         return globalSuccessHandler(response, req, res);
     }
     return next(new AppError('User not found', 404));
@@ -26,20 +29,26 @@ export const updateUserInfromation = async (req, res, next) => {
     const user = await userModel.findByPk(req.user.id);
     if (!user)
         return next(new AppError('User not found', 404));
-    if (userName)
-        user.userName = userName;
+    if (userName) {
+        if (req.user.userName != userName) {
+            user.userName = userName;
+            const code = customAlphabet('123456789abcdefghijklmnopqrstuvwxyz', 10)();
+            user.urlUser = `saraha/${code}/${userName}`;
+        }
+    }
     if (email) {
-        if (req.user.email == email)
-            return next(new AppError('This is the same as your current email', 400));
-        const existingUser = await userModel.findOne({ where: { email } });
-        if (existingUser)
-            return next(new AppError('Email already exists', 400));
-        user.confirmEmail = false;
-        await sendConfirmEmail(email, userName || req.user.userName, req);
-        user.email = email;
+        if (req.user.email != email) {
+            const existingUser = await userModel.findOne({ where: { email } });
+            if (existingUser)
+                return next(new AppError('الايميل موجود بالفعل', 400));
+            user.confirmEmail = false;
+
+            await sendConfirmEmail(email, userName || req.user.userName, req);
+            user.email = email;
+        }
     }
     await user.save();
-    const response = new AppResponse('User updated successfully', { user }, 200);
+    const response = new AppResponse('تم التحديث بنجاح', user, 200, 'user');
     return globalSuccessHandler(response, req, res);
 }
 
@@ -62,17 +71,3 @@ export const changeRole = async (req, res, next) => {
     const response = new AppResponse('User role updated successfully', null, 200);
     return globalSuccessHandler(response, req, res);
 }
-
-export const searchUsers = async (req, res, next) => {
-    const { userName } = req.query;
-    if (!userName) return next(new AppError('Name query parameter is required', 400));
-    const users = await userModel.findAll({
-        attributes: ['id', 'userName'],
-        where: {
-            userName: { [Op.like]: `%${userName}%` }
-        }
-    });
-    if (users.length === 0) return next(new AppError('No users found', 404));
-    const response = new AppResponse('Users retrieved successfully', users, 200, 'users');
-    return globalSuccessHandler(response, req, res);
-};

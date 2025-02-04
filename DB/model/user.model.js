@@ -28,8 +28,21 @@ const userModel = sequelize.define('User',
             type:DataTypes.ENUM('user','admin'),
             defaultValue:'user',
             allowNull: false
+        },
+        urlUser : {
+            type: DataTypes.STRING,
+            allowNull: false,
+            unique: true,
         }
 });
-userModel.hasMany(messageModel);
-messageModel.belongsTo(userModel);
+userModel.hasMany(messageModel, {
+    foreignKey: "UserId",
+    onDelete: "CASCADE",
+  });
+  
+  messageModel.belongsTo(userModel, {
+    foreignKey: "UserId",
+    onDelete: "CASCADE",
+  });
+  
 export default userModel;

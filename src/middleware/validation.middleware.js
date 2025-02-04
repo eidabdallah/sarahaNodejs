@@ -1,5 +1,5 @@
 import Joi from "joi";
-const dataMethods = ['body', 'query', 'headers', 'params'];
+import { AppError } from "../utils/errorHandling.js";
 export const generalFields = {
     email: Joi.string().email().required().messages({
         "string.empty": "البريد الإلكتروني مطلوب.",
@@ -11,7 +11,7 @@ export const generalFields = {
         "any.required": "كلمة المرور مطلوبة.",
         "string.min": "يجب أن تكون كلمة المرور 8 أحرف على الأقل.",
     }),
-    userName: Joi.string().pattern(/^[a-zA-Zء-ي ]+$/).min(3).max(20).messages({
+    userName: Joi.string().pattern(/^[a-zA-Zء-ي ]+$/).required().min(3).max(20).messages({
         "string.empty": "اسم المستخدم مطلوب.",
         "any.required": "اسم المستخدم مطلوب.",
         "string.min": "اسم المستخدم يجب أن يكون 3 أحرف على الأقل.",
@@ -21,19 +21,14 @@ export const generalFields = {
 };
 export const validation = (schema) => {
     return (req, res, next) => {
-        const errors = {};
-        dataMethods.forEach((method) => {
-            if (schema[method]) {
-                const { error } = schema[method].validate(req[method], { abortEarly: false });
-                if (error) {
-                    error.details.forEach((detail) => {
-                        errors[detail.path[0]] = detail.message;
-                    });
-                }
-            }
-        });
-        if (Object.keys(errors).length > 0) {
-            return res.status(400).json({ message: "validation error", errors });
+        const inputData = {...req.params, ...req.body};
+        const { error } = schema.validate(inputData, { abortEarly: false });
+        if (error) {
+            const errors = {};
+            error.details.forEach((detail) => {
+                errors[detail.path[0]] = detail.message;
+            });
+            return next(new AppError(errors , 400));
         }
         next();
     };

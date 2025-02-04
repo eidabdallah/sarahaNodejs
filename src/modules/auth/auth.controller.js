@@ -12,7 +12,9 @@ export const register = async (req, res, next) => {
         return next(new AppError('البريد الإلكتروني موجود بالفعل مسبقا', 409));
 
     const hashPassword = bcrypt.hashSync(password, parseInt(process.env.SALTROUND));
-    await userModel.create({ userName, email, password: hashPassword });
+    const code = customAlphabet('123456789abcdefghijklmnopqrstuvwxyz', 10)();
+    const urlUser = `saraha/${code}/${userName}`;
+    await userModel.create({ userName, email, password: hashPassword , urlUser});
     await sendConfirmEmail(email, userName, req);
 
     const response = new AppResponse('User registered successfully', null , 201);
@@ -30,7 +32,7 @@ export const login = async (req, res, next) => {
     if (!isMatch)
         return next(new AppError('يوجد خطا في الايميل او كلمة السر', 400));
 
-    const token = jwt.sign({ id: user.id, email, userName:user.userName , role: user.role, confirmEmail: user.confirmEmail }, process.env.JWT_SECRET, { expiresIn: '10h' });
+    const token = jwt.sign({ id: user.id, email, userName:user.userName , role: user.role, confirmEmail: user.confirmEmail , urlUser : user.urlUser}, process.env.JWT_SECRET, { expiresIn: '10h' });
     const response = new AppResponse('Logged in successfully', token, 200, 'token');
     return globalSuccessHandler(response, req, res);
 }
