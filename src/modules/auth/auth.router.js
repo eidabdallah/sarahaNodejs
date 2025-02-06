@@ -12,6 +12,6 @@ router.post('/login', validation(loginSchema), asyncHandler(authController.login
 router.get('/confirmEmail/:token', asyncHandler(authController.confirmEmail));
 router.patch('/sendCode', validation(sendCodeSchema), asyncHandler(authController.sendCode));
 router.patch('/forgetPassword', validation(forgetPasswordSchema), asyncHandler(authController.forgetPassword));
-router.patch('/changePassword', auth(endPoints.changePassword), validation(changePasswordSchema), asyncHandler(authController.changePassword));
+router.patch('/changePassword', asyncHandler(auth(endPoints.changePassword)), validation(changePasswordSchema), asyncHandler(authController.changePassword));
 
 export default router;

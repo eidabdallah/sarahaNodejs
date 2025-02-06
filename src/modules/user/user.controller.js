@@ -3,19 +3,30 @@ import { AppError } from "../../utils/errorHandling.js";
 import { AppResponse, globalSuccessHandler } from "../../utils/responseHandler.js";
 import { sendConfirmEmail } from './../auth/authHelpers.js';
 import { customAlphabet } from "nanoid";
+import { Op } from 'sequelize';
 
 export const getAllUsers = async (req, res, next) => {
-    const users = await userModel.findAll();
+    const users = await userModel.findAll({
+        where: {
+            id: {
+                [Op.ne]: req.user.id
+            }
+        },
+        attributes: { exclude: ['password', 'sendCode', 'confirmEmail'] }
+    });
+
     if (users.length > 0) {
-        const response = new AppResponse('جميع المستخدمين', users, 200, 'users');
+        const response = new AppResponse('جميع المستخدمين باستثناء المستخدم الحالي', users, 200, 'users');
         return globalSuccessHandler(response, req, res);
     }
-    return next(new AppError('Users not found', 404));
+
+    return next(new AppError('لا يوجد مستخدمين', 404));
 }
+
 
 export const getUserInfromation = async (req, res, next) => {
     const user = await userModel.findByPk(req.user.id, {
-        attributes: { exclude: ['password', 'sendCode', 'confirmEmail'] }
+        attributes: { exclude: ['password', 'sendCode', 'confirmEmail' , 'createdAt' , 'updatedAt'] }
     });
     if (user) {
         const response = new AppResponse('معلومات المستخدم', user, 200, 'user');
@@ -28,7 +39,7 @@ export const updateUserInfromation = async (req, res, next) => {
     const { userName, email } = req.body;
     const user = await userModel.findByPk(req.user.id);
     if (!user)
-        return next(new AppError('User not found', 404));
+        return next(new AppError('المستخدم غير متوفر', 404));
     if (userName) {
         if (req.user.userName != userName) {
             user.userName = userName;
@@ -55,9 +66,9 @@ export const updateUserInfromation = async (req, res, next) => {
 export const deleteUser = async (req, res, next) => {
     const user = await userModel.findByPk(req.params.id);
     if (!user)
-        return next(new AppError('User not found', 404));
+        return next(new AppError('المستخدم غير متوفر', 404));
     await user.destroy();
-    const response = new AppResponse('User deleted successfully', null, 200);
+    const response = new AppResponse('تم الحذف بنجاح', null, 200);
     return globalSuccessHandler(response, req, res);
 }
 
@@ -65,9 +76,9 @@ export const changeRole = async (req, res, next) => {
     const { role } = req.body;
     const user = await userModel.findByPk(req.params.id);
     if (!user)
-        return next(new AppError('User not found', 404));
+        return next(new AppError('المستخدم غير متوفر', 404));
     user.role = role;
     user.save();
-    const response = new AppResponse('User role updated successfully', null, 200);
+    const response = new AppResponse('تم تغيير المنصب بنجاح', null, 200);
     return globalSuccessHandler(response, req, res);
 }

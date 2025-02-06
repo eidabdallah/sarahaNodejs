@@ -9,7 +9,7 @@ export const generalFields = {
     password: Joi.string().min(8).required().messages({
         "string.empty": "كلمة المرور مطلوبة.",
         "any.required": "كلمة المرور مطلوبة.",
-        "string.min": "يجب أن تكون كلمة المرور 8 أحرف على الأقل.",
+        "string.min": "يجب أن تكون كلمة المرور 8 خانات على الأقل.",
     }),
     userName: Joi.string().pattern(/^[a-zA-Zء-ي ]+$/).required().min(3).max(20).messages({
         "string.empty": "اسم المستخدم مطلوب.",
@@ -21,15 +21,18 @@ export const generalFields = {
 };
 export const validation = (schema) => {
     return (req, res, next) => {
-        const inputData = {...req.params, ...req.body};
-        const { error } = schema.validate(inputData, { abortEarly: false });
-        if (error) {
+        const inputData = { ...req.params, ...req.body };
+        const validationResult = schema.validate(inputData, { abortEarly: false });
+
+        if (validationResult?.error) {
             const errors = {};
-            error.details.forEach((detail) => {
+            validationResult.error.details.forEach((detail) => {
                 errors[detail.path[0]] = detail.message;
             });
-            return next(new AppError(errors , 400));
+
+            return next(new AppError(errors, 400));
         }
+
         next();
     };
 };

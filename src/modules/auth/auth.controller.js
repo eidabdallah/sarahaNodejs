@@ -17,7 +17,7 @@ export const register = async (req, res, next) => {
     await userModel.create({ userName, email, password: hashPassword , urlUser});
     await sendConfirmEmail(email, userName, req);
 
-    const response = new AppResponse('User registered successfully', null , 201);
+    const response = new AppResponse('تم التسجيل بنجاح', null , 201);
     return globalSuccessHandler(response, req, res);
 }
 export const login = async (req, res, next) => {
@@ -26,14 +26,14 @@ export const login = async (req, res, next) => {
     if (!user)
         return next(new AppError('يوجد خطا في الايميل او كلمة السر', 400));
     if (!user.confirmEmail)
-        return next(new AppError('الرجاء تاكيد البريد الالكتروني عبر gmail', 403));
+        return next(new AppError('الرجاء تاكيد البريد الالكتروني عبر الايميل', 403));
 
     const isMatch = bcrypt.compareSync(password, user.password);
     if (!isMatch)
         return next(new AppError('يوجد خطا في الايميل او كلمة السر', 400));
 
     const token = jwt.sign({ id: user.id, email, userName:user.userName , role: user.role, confirmEmail: user.confirmEmail , urlUser : user.urlUser}, process.env.JWT_SECRET, { expiresIn: '10h' });
-    const response = new AppResponse('Logged in successfully', token, 200, 'token');
+    const response = new AppResponse('تسجيل الدخول بنجاح', token, 200, 'token');
     return globalSuccessHandler(response, req, res);
 }
 export const confirmEmail = async (req, res, next) => {
@@ -45,7 +45,7 @@ export const confirmEmail = async (req, res, next) => {
         await user.save();
        await confirmEmailMessage(user.userName , res);
     } else {
-        return next(new AppError('User not found', 404));
+        return next(new AppError('المستخدم غير متوفر', 404));
     }
 }
 
@@ -62,7 +62,7 @@ export const sendCode = async (req, res, next) => {
         user.sendCode = '';
         await user.save();
     }, 5 * 60 * 1000);
-    const response = new AppResponse('Code sent successfully', null, 200);
+    const response = new AppResponse('تم ارسال الكود عبر الايميل', null, 200);
     return globalSuccessHandler(response, req, res);
 }
 
@@ -76,7 +76,7 @@ export const forgetPassword = async (req, res, next) => {
     user.password = bcrypt.hashSync(password, parseInt(process.env.SALTROUND));
     user.sendCode = '';
     await user.save();
-    const response = new AppResponse('Password reset successfully', null, 200);
+    const response = new AppResponse('تم اعادة تغيير كلمة المرور', null, 200);
     return globalSuccessHandler(response, req, res);
 
 }
@@ -84,15 +84,15 @@ export const forgetPassword = async (req, res, next) => {
 export const changePassword = async (req, res, next) => {
     const { email, oldPassword, newPassword } = req.body;
     if (req.user.email != email)
-        return res.status(403).json({ message: 'The email address provided does not match your account.' });
+        return next(new AppError('ايميلك الحالي لا يطابق هذا الايميل', 403));
     const user = await userModel.findOne({ where: { email } });
     if (!user)
-        return next(new AppError('Email not found', 404));
+        return next(new AppError('الايميل غير متوفر', 404));
     const isMatch = bcrypt.compareSync(oldPassword, user.password);
     if (!isMatch)
-        return next(new AppError('Invalid old password', 403));
+        return next(new AppError('كلمة السر القديمة خاطئة', 403));
     user.password = bcrypt.hashSync(newPassword, parseInt(process.env.SALTROUND));
     await user.save();
-    const response = new AppResponse('Password changed successfully', null, 200);
+    const response = new AppResponse('تم تغيير كلمة المرور بنجاح', null, 200);
     return globalSuccessHandler(response, req, res);
 }
