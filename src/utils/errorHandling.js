@@ -1,6 +1,6 @@
 export class AppError extends Error {
     constructor(errors, statusCode) {
-        super('Validation Error');
+        super('Error');
         this.statusCode = statusCode;
         this.errors = errors;
     }
