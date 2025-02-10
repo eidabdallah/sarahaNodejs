@@ -22,7 +22,7 @@ export const asyncHandler = (functionCheck) => {
 
 export const globalErrorHandler = (err, req, res, next) => {
     if (err instanceof AppError) {
-        return res.status(err.statusCode).json({ errors: err.errors });
+        return res.status(err.statusCode).json({ errors: err || err.errors });
     }
     return res.status(500).json({ message: err.message || 'Internal Server Error' });
 };
