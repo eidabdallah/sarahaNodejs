@@ -1,6 +1,6 @@
 import { Sequelize } from 'sequelize';
-export const sequelize = new Sequelize("freedb_saraha", "freedb_EidAbdallah@", "WF5dV*rwPEbSsJC", {
-    host: "sql.freedb.tech",
+export const sequelize = new Sequelize(process.env.DB_NAME, process.env.DB_USER, process.env.DB_PASSWORD, {
+    host: process.env.HOST,
     port: 3306,
     dialect: 'mysql'
 });
