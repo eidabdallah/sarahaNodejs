@@ -1,5 +1,4 @@
-import dotenv from 'dotenv';
-dotenv.config();
+import 'dotenv/config';
 import express from 'express';
 import { initApp } from './src/modules/app.router.js';
 const PORT = process.env.PORT || 3000;
